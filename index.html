@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ 우리 학교 급식 & 시간표 ⚡</title>
+    <!-- 디자인을 1초 만에 이쁘게 만들어주는 Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-6">
+
+    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden p-6 space-y-6">
+        <header class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800">🏫 오늘의 학교 정보</h1>
+            <p id="today-date" class="text-sm text-gray-500 mt-1">로딩 중...</p>
+        </header>
+
+        <!-- 급식 섹션 -->
+        <section class="bg-amber-50 rounded-xl p-4 border border-amber-100">
+            <h2 class="text-lg font-semibold text-amber-800 mb-2">🍱 오늘의 급식</h2>
+            <div id="meal-list" class="text-gray-700 text-sm space-y-1">
+                데이터를 불러오는 중입니다...
+            </div>
+        </section>
+
+        <!-- 시간표 섹션 -->
+        <section class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+            <h2 class="text-lg font-semibold text-blue-800 mb-2">📅 오늘의 시간표</h2>
+            <div id="timetable-list" class="text-gray-700 text-sm divide-y divide-blue-100">
+                데이터를 불러오는 중입니다...
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // === 🛠️ 딱 여기만 우리 학교 정보로 수정하세요 🛠️ ===
+        const ATPT_OFCDC_SC_CODE = "B10"; // 시도교육청코드 (예: 서울 B10, 경기 J10, 부산 C10 등)
+        const SD_SCHUL_CODE = "7010537";   // 행정표준코드 (7자리 숫자, 구글에 '학교명 행정표준코드' 검색하면 나옴)
+        const GRADE = "1";                 // 학년
+        const CLASS_NM = "1";              // 반
+        // ====================================================
+
+        // 오늘 날짜 구하기 (YYYYMMDD 형식)
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const ymd = `${yyyy}${mm}${dd}`;
+
+        document.getElementById('today-date').innerText = `${yyyy}년 ${mm}월 ${dd}일`;
+
+        // 1. 나이스 급식 API 호출
+        async function getMeal() {
+            const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&pIndex=1&pSize=10&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&MLSV_YMD=${ymd}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if(data.mealServiceDietInfo) {
+                    const row = data.mealServiceDietInfo[1].row[0];
+                    // <br/> 태그 정제 및 정렬
+                    const menu = row.DDISH_NM.replace(/<br\/>/g, '<br>• ');
+                    document.getElementById('meal-list').innerHTML = `• ${menu}`;
+                } else {
+                    document.getElementById('meal-list').innerText = "오늘은 급식 정보가 없습니다. (주말/공휴일 방학 등)";
+                }
+            } catch (err) {
+                document.getElementById('meal-list').innerText = "급식을 불러오지 못했습니다.";
+            }
+        }
+
+        // 2. 나이스 시간표 API 호출 (고등학교 기준: hisTimetable / 중학교: misTimetable / 초등: elsTimetable)
+        async function getTimeTable() {
+            // 본인 학교급에 맞게 url의 'hisTimetable'을 변경하세요 (초등: elsTimetable, 중등: misTimetable, 고등: hisTimetable)
+            const url = `https://open.neis.go.kr/hub/hisTimetable?Type=json&pIndex=1&pSize=20&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&ALL_TI_YMD=${ymd}&GRADE=${GRADE}&CLASS_NM=${CLASS_NM}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if(data.hisTimetable) { // 학교급에 맞게 변경 필수 (hisTimetable, misTimetable 등)
+                    const rows = data.hisTimetable[1].row;
+                    let html = '';
+                    rows.forEach(row => {
+                        html += `<div class="py-2 flex justify-between">
+                                    <span class="font-medium text-gray-500">${row.PERIO}교시</span>
+                                    <span class="font-bold text-gray-800">${row.ITM_NM}</span>
+                                 </div>`;
+                    });
+                    document.getElementById('timetable-list').innerHTML = html;
+                } else {
+                    document.getElementById('timetable-list').innerText = "오늘은 시간표 정보가 없습니다.";
+                }
+            } catch (err) {
+                document.getElementById('timetable-list').innerText = "시간표를 불러오지 못했습니다.";
+            }
+        }
+
+        // 실행
+        getMeal();
+        getTimeTable();
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏫 동양고등학교 급식 & 시간표</title>
+    <!-- Tailwind CSS 최신 버전 적용 (트렌디한 디자인) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4 flex items-center justify-center">
+
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 p-6 space-y-6">
+        <!-- 헤더 영역 -->
+        <header class="text-center border-b border-gray-100 pb-4">
+            <div class="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
+                Dongyang High School
+            </div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">🏫 동양고 오늘의 정보</h1>
+            <p id="today-date" class="text-sm font-medium text-slate-500 mt-1">날짜 로딩 중...</p>
+        </header>
+
+        <!-- 급식 섹션 -->
+        <section class="bg-amber-50/60 rounded-2xl p-5 border border-amber-100/70 shadow-sm transition hover:shadow-md">
+            <h2 class="text-lg font-bold text-amber-900 flex items-center gap-2 mb-3">
+                <span>🍱</span> 오늘의 급식 메뉴
+            </h2>
+            <div id="meal-list" class="text-slate-700 text-sm leading-relaxed font-medium bg-white/80 rounded-xl p-3 border border-amber-50">
+                데이터를 불러오는 중입니다...
+            </div>
+        </section>
+
+        <!-- 시간표 섹션 -->
+        <section class="bg-indigo-50/60 rounded-2xl p-5 border border-indigo-100/70 shadow-sm transition hover:shadow-md">
+            <h2 class="text-lg font-bold text-indigo-900 flex items-center gap-2 mb-3">
+                <span>📅</span> 오늘의 시간표
+            </h2>
+            <div id="timetable-list" class="text-slate-700 text-sm bg-white/80 rounded-xl p-2 border border-indigo-50 divide-y divide-slate-100">
+                데이터를 불러오는 중입니다...
+            </div>
+        </section>
+        
+        <footer class="text-center text-xs text-slate-400 font-medium pt-2">
+            ✨ 동아리 4시간 타임어택 프로젝트
+        </footer>
+    </div>
+
+    <script>
+        // === 🛠️ 동양고등학교 고유 정보 세팅 완료 🛠️ ===
+        const ATPT_OFCDC_SC_CODE = "B10"; // 서울특별시교육청
+        const SD_SCHUL_CODE = "7010537";   // 동양고등학교 행정표준코드
+        
+        // 특정 학년과 반을 설정하세요 (예: 1학년 1반)
+        const GRADE = "2";                 
+        const CLASS_NM = "1";              
+        // ====================================================
+
+        // 오늘 날짜 구하기 (YYYYMMDD 형식)
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const ymd = `${yyyy}${mm}${dd}`;
+
+        document.getElementById('today-date').innerText = `${yyyy}년 ${mm}월 ${dd}일 (${GRADE}학년 ${CLASS_NM}반)`;
+
+        // 1. 나이스 급식 API 호출
+        async function getMeal() {
+            const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&pIndex=1&pSize=10&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&MLSV_YMD=${ymd}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if(data.mealServiceDietInfo) {
+                    const row = data.mealServiceDietInfo[1].row[0];
+                    // 알레르기 정보 제거 및 줄바꿈 예쁘게 처리
+                    let menu = row.DDISH_NM.replace(/\([^)]*\)/g, ''); // 괄호와 안의 숫자 제거
+                    menu = menu.replace(/<br\/>/g, '<br>• ');
+                    document.getElementById('meal-list').innerHTML = `• ${menu}`;
+                } else {
+                    document.getElementById('meal-list').innerHTML = "<span class='text-slate-400'>오늘 주말이거나 급식 정보가 없는 날입니다! 😴</span>";
+                }
+            } catch (err) {
+                document.getElementById('meal-list').innerText = "급식을 불러오지 못했습니다.";
+            }
+        }
+
+        // 2. 나이스 시간표 API 호출 (고등학교: hisTimetable)
+        async function getTimeTable() {
+            const url = `https://open.neis.go.kr/hub/hisTimetable?Type=json&pIndex=1&pSize=20&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&ALL_TI_YMD=${ymd}&GRADE=${GRADE}&CLASS_NM=${CLASS_NM}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if(data.hisTimetable) { 
+                    const rows = data.hisTimetable[1].row;
+                    let html = '';
+                    rows.forEach(row => {
+                        html += `<div class="py-2.5 px-2 flex justify-between items-center">
+                                    <span class="font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md text-xs">${row.PERIO}교시</span>
+                                    <span class="font-extrabold text-slate-800 text-base">${row.ITM_NM}</span>
+                                 </div>`;
+                    });
+                    document.getElementById('timetable-list').innerHTML = html;
+                } else {
+                    document.getElementById('timetable-list').innerHTML = "<span class='text-slate-400 p-2 block'>오늘 시간표 정보가 없습니다. (주말/공휴일)</span>";
+                }
+            } catch (err) {
+                document.getElementById('timetable-list').innerText = "시간표를 불러오지 못했습니다.";
+            }
+        }
+
+        // 실행
+        getMeal();
+        getTimeTable();
+    </script>
+</body>
+</html>
